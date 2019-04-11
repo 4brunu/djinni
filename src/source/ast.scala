@@ -61,11 +61,15 @@ sealed abstract class TypeDef
 
 case class Const(ident: Ident, ty: TypeRef, value: Any, doc: Doc)
 
-case class Enum(options: Seq[Enum.Option], flags: Boolean) extends TypeDef
+case class Enum(options: Seq[Enum.Option], flags: Boolean, derivingTypes: Set[DerivingType]) extends TypeDef
 object Enum {
   object SpecialFlag extends Enumeration {
     type SpecialFlag = Value
     val NoFlags, AllFlags = Value
+  }
+  object DerivingType extends Enumeration {
+    type DerivingType = Value
+    val Open, Closed = Value
   }
   import SpecialFlag._
   case class Option(ident: Ident, doc: Doc, specialFlag: scala.Option[SpecialFlag])

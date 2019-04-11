@@ -19,7 +19,6 @@ package djinni
 import java.io.{File, FileNotFoundException, InputStreamReader, FileInputStream, Writer}
 
 import djinni.ast.Interface.Method
-import djinni.ast.Record.DerivingType.DerivingType
 import djinni.syntax._
 import djinni.ast._
 import java.util.{Map => JMap}
@@ -108,18 +107,18 @@ private object IdlParser extends RegexParsers {
   def typeDef: Parser[TypeDef] = record | enum | flags | interface
 
   def recordHeader = "record" ~> extRecord
-  def record: Parser[Record] = recordHeader ~ bracesList(field | const) ~ opt(deriving) ^^ {
-    case ext~items~deriving => {
+  def record: Parser[Record] = recordHeader ~ bracesList(field | const) ~ opt(derivingRecord) ^^ {
+    case ext~items~derivingRecord => {
       val fields = items collect {case f: Field => f}
       val consts = items collect {case c: Const => c}
-      val derivingTypes = deriving.getOrElse(Set[DerivingType]())
+      val derivingTypes = derivingRecord.getOrElse(Set[Record.DerivingType.DerivingType]())
       Record(ext, fields, consts, derivingTypes)
     }
   }
   def field: Parser[Field] = doc ~ ident ~ ":" ~ typeRef ^^ {
     case doc~ident~_~typeRef => Field(ident, typeRef, doc)
   }
-  def deriving: Parser[Set[DerivingType]] = "deriving" ~> parens(rep1sepend(ident, ",")) ^^ {
+  def derivingRecord: Parser[Set[Record.DerivingType.DerivingType]] = "deriving" ~> parens(rep1sepend(ident, ",")) ^^ {
     _.map(ident => ident.name match {
       case "eq" => Record.DerivingType.Eq
       case "ord" => Record.DerivingType.Ord
@@ -161,7 +160,7 @@ private object IdlParser extends RegexParsers {
   def externTypeDecl: Parser[TypeDef] = externEnum | externFlags | externInterface | externRecord
   def externEnum: Parser[Enum] = enumHeader ^^ { case _ => Enum(List(), false) }
   def externFlags: Parser[Enum] = flagsHeader ^^ { case _ => Enum(List(), true) }
-  def externRecord: Parser[Record] = recordHeader ~ opt(deriving) ^^ { case ext~deriving => Record(ext, List(), List(), deriving.getOrElse(Set[DerivingType]())) }
+  def externRecord: Parser[Record] = recordHeader ~ opt(derivingRecord) ^^ { case ext~derivingRecord => Record(ext, List(), List(), derivingRecord.getOrElse(Set[Record.DerivingType.DerivingType]())) }
   def externInterface: Parser[Interface] = interfaceHeader ^^ { case ext => Interface(ext, List(), List()) }
 
   def staticLabel: Parser[Boolean] = ("static ".r | "".r) ^^ {

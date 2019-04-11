@@ -16,7 +16,6 @@
 
 package djinni
 
-import djinni.ast.Record.DerivingType
 import djinni.ast._
 import djinni.generatorTools._
 import djinni.meta._
@@ -54,10 +53,16 @@ class ObjcGenerator(spec: Spec) extends BaseObjcGenerator(spec) {
       w.wl(if(e.flags) {
         s"typedef NS_OPTIONS(NSUInteger, $self)"
       } else {
-        if (spec.objcClosedEnums) {
+        if (e.derivingTypes.contains(Enum.DerivingType.Closed)) {
           s"typedef NS_CLOSED_ENUM(NSInteger, $self)"
-        } else {
+        } else if (e.derivingTypes.contains(Enum.DerivingType.Open)) {
           s"typedef NS_ENUM(NSInteger, $self)"
+        } else {
+          if (spec.objcClosedEnums) {
+            s"typedef NS_CLOSED_ENUM(NSInteger, $self)"
+          } else {
+            s"typedef NS_ENUM(NSInteger, $self)"
+          }
         }
       })
       w.bracedSemi {
@@ -195,7 +200,7 @@ class ObjcGenerator(spec: Spec) extends BaseObjcGenerator(spec) {
         val nullability = marshal.nullability(f.ty.resolved).fold("")(", " + _)
         w.wl(s"@property (nonatomic, readonly${nullability}) ${marshal.fqFieldType(f.ty)} ${idObjc.field(f.ident)};")
       }
-      if (r.derivingTypes.contains(DerivingType.Ord)) {
+      if (r.derivingTypes.contains(Record.DerivingType.Ord)) {
         w.wl
         w.wl(s"- (NSComparisonResult)compare:(nonnull $self *)other;")
       }
@@ -252,7 +257,7 @@ class ObjcGenerator(spec: Spec) extends BaseObjcGenerator(spec) {
 
       if (r.consts.nonEmpty) generateObjcConstants(w, r.consts, noBaseSelf, ObjcConstantType.ConstMethod)
 
-      if (r.derivingTypes.contains(DerivingType.Eq)) {
+      if (r.derivingTypes.contains(Record.DerivingType.Eq)) {
         w.wl("- (BOOL)isEqual:(id)other")
         w.braced {
           w.w(s"if (![other isKindOfClass:[$self class]])").braced {
@@ -345,7 +350,7 @@ class ObjcGenerator(spec: Spec) extends BaseObjcGenerator(spec) {
         }
         w.wl("}")
       }
-      if (r.derivingTypes.contains(DerivingType.Ord)) {
+      if (r.derivingTypes.contains(Record.DerivingType.Ord)) {
         w.wl(s"- (NSComparisonResult)compare:($self *)other")
         w.braced {
           w.wl("NSComparisonResult tempResult;")
