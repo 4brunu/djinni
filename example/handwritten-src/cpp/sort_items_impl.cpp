@@ -43,4 +43,8 @@ ItemList SortItems::run_sort(const ItemList & items) {
     return ItemList(lines);
 }
 
+int32_t SortItemsImpl::count() {
+    return 10;
+}
+
 }
